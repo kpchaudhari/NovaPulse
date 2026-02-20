@@ -68,50 +68,66 @@ def summarize_category(cat_key: str, articles: list[dict]) -> list[dict]:
     article_text = _build_article_text(capped)
     prompt = SUMMARY_PROMPT.format(category=cat_title, articles=article_text)
 
-    try:
-        resp = requests.post(
-            GEMINI_URL,
-            headers={
-                "Content-Type": "application/json",
-                "X-goog-api-key": GEMINI_API_KEY,
-            },
-            json={
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.3,
-                    "maxOutputTokens": 1024,
+    import time
+    max_retries = 3
+
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(
+                GEMINI_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": GEMINI_API_KEY,
                 },
-            },
-            timeout=30,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.3,
+                        "maxOutputTokens": 1024,
+                    },
+                },
+                timeout=30,
+            )
 
-        # Extract the text response
-        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
-        
-        # Clean up: strip markdown code fences if present
-        cleaned = raw_text.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1]  # remove first line
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
-            cleaned = cleaned.strip()
+            if resp.status_code == 429:
+                wait_time = 10 * (2 ** attempt)  # 10s, 20s, 40s
+                logger.warning(f"  Gemini rate limited for [{cat_key}], retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                time.sleep(wait_time)
+                continue
 
-        summaries = json.loads(cleaned)
+            resp.raise_for_status()
+            data = resp.json()
 
-        # Attach summaries to articles
-        summary_map = {s["index"]: s["summary"] for s in summaries}
-        for i, article in enumerate(capped):
-            article["ai_summary"] = summary_map.get(i, "")
+            # Extract the text response
+            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+            
+            # Clean up: strip markdown code fences if present
+            cleaned = raw_text.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[1]  # remove first line
+                if cleaned.endswith("```"):
+                    cleaned = cleaned[:-3]
+                cleaned = cleaned.strip()
 
-        logger.info(f"  Gemini summarized {len(summaries)} articles for [{cat_key}]")
-        return capped
+            summaries = json.loads(cleaned)
 
-    except Exception as e:
-        logger.warning(f"  Gemini summarization failed for [{cat_key}]: {e}")
-        # Graceful fallback: return articles without summaries
-        return capped
+            # Attach summaries to articles
+            summary_map = {s["index"]: s["summary"] for s in summaries}
+            for i, article in enumerate(capped):
+                article["ai_summary"] = summary_map.get(i, "")
+
+            logger.info(f"  Gemini summarized {len(summaries)} articles for [{cat_key}]")
+            return capped
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"  Gemini attempt {attempt + 1} failed for [{cat_key}]: {e}")
+                time.sleep(5)
+            else:
+                logger.warning(f"  Gemini summarization failed for [{cat_key}] after {max_retries} attempts: {e}")
+
+    # Graceful fallback: return articles without summaries
+    return capped
 
 
 def summarize_all(categorised: dict[str, list[dict]]) -> dict[str, list[dict]]:
