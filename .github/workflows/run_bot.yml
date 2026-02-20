@@ -1,9 +1,9 @@
 name: NovaPulse — AI Digest Bot
 
 on:
-  # Run every 6 hours automatically
+  # Run at 8:00 AM and 8:00 PM IST
   schedule:
-    - cron: "0 */6 * * *"     # 12am, 6am, 12pm, 6pm UTC  (5:30am, 11:30am, 5:30pm, 11:30pm IST)
+    - cron: "30 2,14 * * *"   # 2:30 AM UTC = 8:00 AM IST, 2:30 PM UTC = 8:00 PM IST
 
   # Allow manual trigger from GitHub Actions tab
   workflow_dispatch:
