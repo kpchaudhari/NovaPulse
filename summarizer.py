@@ -86,10 +86,11 @@ def summarize_category(cat_key: str, articles: list[dict]) -> list[dict]:
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {
                         "temperature": 0.3,
-                        "maxOutputTokens": 1024,
+                        "maxOutputTokens": 4096,
+                        "responseMimeType": "application/json",
                     },
                 },
-                timeout=30,
+                timeout=60,
             )
 
             if resp.status_code == 429:
