@@ -52,14 +52,15 @@ def format_category_block(cat_key: str, articles: list[dict]) -> str:
         ai_summary = article.get("ai_summary", "")
 
         if ai_summary:
-            # Professional format: summary text (plain) + clickable "Read more" link
+            # AI summary: clean text + separate link
             summary_escaped = ai_summary.replace("<", "&lt;").replace(">", "&gt;")
             lines.append(f"▸ {summary_escaped}")
             lines.append(f'   🔗 <a href="{url}">Read more</a>')
         else:
-            # Fallback: title as link
+            # Fallback: plain title + separate link (same visual style)
             t = article["title"].replace("<", "&lt;").replace(">", "&gt;")
-            lines.append(f'▸ <a href="{url}">{t}</a>')
+            lines.append(f"▸ {t}")
+            lines.append(f'   🔗 <a href="{url}">Read more</a>')
 
         # Add spacing between articles
         lines.append("")

@@ -12,7 +12,7 @@ from categories import CATEGORIES
 
 logger = logging.getLogger(__name__)
 
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
 
 # ─── Prompt Template ─────────────────────────────────────────────────────────
 
@@ -144,11 +144,17 @@ def summarize_all(categorised: dict[str, list[dict]]) -> dict[str, list[dict]]:
     """
     Summarize all categories. Returns the same dict but with
     'ai_summary' field added to each article where possible.
+    Adds delays between categories to respect Gemini rate limits.
     """
+    import time
     result = {}
+    cats_processed = 0
     for cat_key, articles in categorised.items():
         if articles:
+            if cats_processed > 0:
+                time.sleep(5)  # 5s between categories to avoid rate limiting
             result[cat_key] = summarize_category(cat_key, articles)
+            cats_processed += 1
         else:
             result[cat_key] = articles
     return result
