@@ -95,12 +95,24 @@ def main() -> None:
     logger.info(f"Digest: {format_summary_line(categorised)}")
 
     if not any(categorised.values()):
-        logger.info("No matching articles found for the given criteria. Exiting.")
+        logger.info("No matching articles found for the given criteria.")
+        if is_manual:
+            from telegram_bot import send_message
+            cat_label = target_category if target_category != "all" else "any category"
+            send_message(f"🔍 <b>BuzzWordAI</b>\n\nNo fresh AI news found for <b>{cat_label}</b> right now.\nTry again later or pick a different category! 🧠")
         sys.exit(0)
 
     # 5. AI Summarize
     logger.info("Generating AI summaries via Gemini...")
     categorised = summarize_all(categorised)
+
+    # Check if Gemini's AI filter removed everything
+    if not any(categorised.values()):
+        logger.info("All articles filtered as non-AI by Gemini.")
+        if is_manual:
+            from telegram_bot import send_message
+            send_message("🔍 <b>BuzzWordAI</b>\n\nNo AI-relevant news found right now.\nTry again later or pick a different category! 🧠")
+        sys.exit(0)
 
     # 6. Format
     messages = format_full_digest(categorised)
