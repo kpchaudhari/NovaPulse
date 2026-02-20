@@ -1,0 +1,54 @@
+name: NovaPulse — AI Digest Bot
+
+on:
+  # Run every 6 hours automatically
+  schedule:
+    - cron: "0 */6 * * *"     # 12am, 6am, 12pm, 6pm UTC  (5:30am, 11:30am, 5:30pm, 11:30pm IST)
+
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (print only, don't send)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  run-bot:
+    name: Fetch & Post AI Digest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      # Restore the seen_urls.json cache between runs so we don't re-post
+      - name: 💾 Restore seen URLs cache
+        uses: actions/cache@v4
+        with:
+          path: seen_urls.json
+          key: seen-urls-${{ github.run_id }}
+          restore-keys: seen-urls-
+
+      - name: ⚡ Run NovaPulse
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          MAX_ARTICLES_PER_CATEGORY: "5"
+          SEND_DELAY_SECONDS: "2"
+        run: python news_bot.py

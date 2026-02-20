@@ -1,0 +1,14 @@
+NovaPulse/
+├── .github/
+│   └── workflows/
+│       └── run_bot.yml      ← GitHub Actions scheduler
+├── categories.py            ← 8 categories (keywords + RSS sources)
+├── classifier.py            ← Keyword-based article classifier
+├── config.py                ← Config loaded from env vars
+├── fetcher.py               ← RSS + NewsAPI fetcher
+├── formatter.py             ← Telegram HTML message builder
+├── news_bot.py              ← Main orchestrator
+├── telegram_bot.py          ← Telegram Bot API sender
+├── .env.example             ← Template — copy to .env
+├── requirements.txt
+└── seen_urls.json           ← Auto-created; tracks posted URLs

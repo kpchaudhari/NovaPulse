@@ -1,0 +1,4 @@
+.env
+.venv/
+seen_urls.json
+__pycache__/
