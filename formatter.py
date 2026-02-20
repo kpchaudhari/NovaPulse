@@ -101,3 +101,46 @@ def format_summary_line(categorised: dict[str, list[dict]]) -> str:
             cat = CATEGORIES[k]
             parts.append(f"{cat['emoji']} {n}")
     return "  ".join(parts) if parts else "No articles found"
+
+
+# ─── Top Stories (single message) ────────────────────────────────────────────
+
+def format_top_stories(articles: list[dict]) -> list[str]:
+    """
+    Format a flat list of ranked articles into a SINGLE Telegram message.
+    Used for "All Categories" mode — one consolidated Top 10 message.
+    """
+    date, time = _now_ist()
+
+    lines = [
+        f"🧠 <b>BuzzWordAI — Top AI Stories</b>",
+        f"📅 <i>{date} • {time} IST</i>",
+        "━━━━━━━━━━━━━━━━━━━━━━",
+        "",
+    ]
+
+    for idx, article in enumerate(articles[:10], 1):
+        url = article["url"]
+        ai_summary = article.get("ai_summary", "")
+
+        if ai_summary:
+            summary_escaped = ai_summary.replace("<", "&lt;").replace(">", "&gt;")
+            lines.append(f"<b>{idx}.</b> {summary_escaped}")
+            lines.append(f'   🔗 <a href="{url}">Read more</a>')
+        else:
+            t = article["title"].replace("<", "&lt;").replace(">", "&gt;")
+            lines.append(f"<b>{idx}.</b> {t}")
+            lines.append(f'   🔗 <a href="{url}">Read more</a>')
+
+        lines.append("")
+
+    lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+    lines.append('💡 <i>Curated by AI, powered by</i> <b>BuzzWordAI</b>')
+    lines.append("📢 Share with your tech crew! ⚡")
+
+    msg = "\n".join(lines)
+
+    # If single message exceeds Telegram limit, split into 2
+    if len(msg) > 4000:
+        return [msg[:3997] + "…"]
+    return [msg]

@@ -159,3 +159,117 @@ def summarize_all(categorised: dict[str, list[dict]]) -> dict[str, list[dict]]:
         else:
             result[cat_key] = articles
     return result
+
+
+# ─── Top 10 Mode (for "All Categories") ─────────────────────────────────────
+
+TOP_STORIES_PROMPT = """You are an expert AI news editor creating a "Top 10 AI Stories" digest.
+
+I will give you a list of article titles and descriptions from the last 24 hours.
+
+Your job:
+1. ONLY include stories about Artificial Intelligence, Machine Learning, LLMs, neural networks, AI products, AI companies, or AI policy. SKIP anything not AI-related.
+2. Pick the TOP 10 most important/impactful AI stories (or fewer if there aren't 10 AI stories).
+3. Rank them by importance — biggest news first.
+4. Write a concise, punchy 1-2 line summary for each that captures the KEY facts.
+5. Use plain text (no markdown, no HTML, no bold/italic).
+
+Respond ONLY with a valid JSON array:
+[
+  {{"index": 3, "summary": "Your summary here"}},
+  {{"index": 7, "summary": "Your summary here"}}
+]
+
+The "index" must match the original article number [N] from the list below.
+Return at most 10 items, ranked by importance. Do NOT include non-AI articles.
+
+Here are the articles:
+
+{articles}"""
+
+
+def summarize_top_stories(articles: list[dict]) -> list[dict]:
+    """
+    For "All Categories" mode: pick the top 10 most important AI stories
+    from ALL articles and return them as a flat list with AI summaries.
+    """
+    import time
+
+    if not GEMINI_API_KEY:
+        logger.warning("GEMINI_API_KEY not set — skipping AI summaries.")
+        return articles[:10]
+
+    if not articles:
+        return []
+
+    # Build prompt with up to 30 articles for Gemini to pick the top 10 from
+    capped = articles[:30]
+    lines = []
+    for i, a in enumerate(capped):
+        title = a.get("title", "No title")
+        summary = a.get("summary", "")
+        source = a.get("source", "")
+        lines.append(f"[{i}] Title: {title}\n    Description: {summary}\n    Source: {source}")
+    article_text = "\n\n".join(lines)
+    prompt = TOP_STORIES_PROMPT.format(articles=article_text)
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(
+                GEMINI_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": GEMINI_API_KEY,
+                },
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.3,
+                        "maxOutputTokens": 4096,
+                        "responseMimeType": "application/json",
+                    },
+                },
+                timeout=60,
+            )
+
+            if resp.status_code == 429:
+                wait_time = 10 * (2 ** attempt)
+                logger.warning(f"  Gemini rate limited for top stories, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                time.sleep(wait_time)
+                continue
+
+            resp.raise_for_status()
+            data = resp.json()
+            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+
+            cleaned = raw_text.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[1]
+                if cleaned.endswith("```"):
+                    cleaned = cleaned[:-3]
+                cleaned = cleaned.strip()
+
+            ranked = json.loads(cleaned)
+
+            # Build result list in Gemini's ranked order
+            result = []
+            for item in ranked[:10]:
+                idx = item["index"]
+                if 0 <= idx < len(capped):
+                    article = capped[idx].copy()
+                    article["ai_summary"] = item["summary"]
+                    result.append(article)
+
+            logger.info(f"  Gemini selected top {len(result)} AI stories from {len(capped)} articles")
+            return result
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"  Gemini top stories attempt {attempt + 1} failed: {e}")
+                time.sleep(5)
+            else:
+                logger.warning(f"  Gemini top stories failed after {max_retries} attempts: {e}")
+
+    # Fallback: return first 10 articles without summaries
+    return capped[:10]

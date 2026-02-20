@@ -16,9 +16,9 @@ from pathlib import Path
 from config import SEEN_URLS_FILE, MAX_SEEN_URLS
 from fetcher import fetch_all_articles
 from classifier import classify_all
-from summarizer import summarize_all
-from formatter import format_full_digest, format_summary_line
-from telegram_bot import send_messages
+from summarizer import summarize_all, summarize_top_stories
+from formatter import format_full_digest, format_top_stories, format_summary_line
+from telegram_bot import send_messages, send_message
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -80,48 +80,55 @@ def main() -> None:
         logger.info("Nothing new to post. Exiting.")
         sys.exit(0)
 
-    # 4. Classify
-    categorised = classify_all(fresh)
-    
-    # Optional: Filter to a single category if requested
-    target_category = os.getenv("CATEGORY", "all").lower()
-    if target_category != "all" and target_category in categorised:
-        logger.info(f"Filtering digest for category: {target_category}")
-        categorised = {target_category: categorised[target_category]}
-    elif target_category != "all":
-        logger.warning(f"Requested category '{target_category}' not found or invalid.")
-        categorised = {}
+    # 4. Branch: "All Categories" (Top 10) vs specific category
+    if target_category == "all":
+        # ── Top 10 Mode: single consolidated message ──
+        logger.info("All Categories mode: generating Top 10 AI Stories...")
+        top_stories = summarize_top_stories(fresh)
 
-    logger.info(f"Digest: {format_summary_line(categorised)}")
+        if not top_stories:
+            logger.info("No AI-relevant stories found.")
+            if is_manual:
+                send_message("🔍 <b>BuzzWordAI</b>\n\nNo AI-relevant news found right now.\nTry again later! 🧠")
+            sys.exit(0)
 
-    if not any(categorised.values()):
-        logger.info("No matching articles found for the given criteria.")
-        if is_manual:
-            from telegram_bot import send_message
-            cat_label = target_category if target_category != "all" else "any category"
-            send_message(f"🔍 <b>BuzzWordAI</b>\n\nNo fresh AI news found for <b>{cat_label}</b> right now.\nTry again later or pick a different category! 🧠")
-        sys.exit(0)
+        messages = format_top_stories(top_stories)
 
-    # 5. AI Summarize
-    logger.info("Generating AI summaries via Gemini...")
-    categorised = summarize_all(categorised)
+    else:
+        # ── Specific Category Mode: category-based digest ──
+        categorised = classify_all(fresh)
 
-    # Check if Gemini's AI filter removed everything
-    if not any(categorised.values()):
-        logger.info("All articles filtered as non-AI by Gemini.")
-        if is_manual:
-            from telegram_bot import send_message
-            send_message("🔍 <b>BuzzWordAI</b>\n\nNo AI-relevant news found right now.\nTry again later or pick a different category! 🧠")
-        sys.exit(0)
+        if target_category in categorised:
+            logger.info(f"Filtering digest for category: {target_category}")
+            categorised = {target_category: categorised[target_category]}
+        else:
+            logger.warning(f"Requested category '{target_category}' not found or invalid.")
+            categorised = {}
 
-    # 6. Format
-    messages = format_full_digest(categorised)
+        logger.info(f"Digest: {format_summary_line(categorised)}")
 
-    # 7. Send
+        if not any(categorised.values()):
+            logger.info("No matching articles found for the given criteria.")
+            if is_manual:
+                send_message(f"🔍 <b>BuzzWordAI</b>\n\nNo fresh AI news found for <b>{target_category}</b> right now.\nTry another category! 🧠")
+            sys.exit(0)
+
+        logger.info("Generating AI summaries via Gemini...")
+        categorised = summarize_all(categorised)
+
+        if not any(categorised.values()):
+            logger.info("All articles filtered as non-AI by Gemini.")
+            if is_manual:
+                send_message("🔍 <b>BuzzWordAI</b>\n\nNo AI-relevant news found right now.\nTry another category! 🧠")
+            sys.exit(0)
+
+        messages = format_full_digest(categorised)
+
+    # 5. Send
     sent = send_messages(messages)
     logger.info(f"Messages sent: {sent}/{len(messages)}")
 
-    # 8. Save seen URLs
+    # 6. Save seen URLs
     if not is_manual:
         new_urls = {a["url"] for a in fresh}
         seen_urls.update(new_urls)
