@@ -1,7 +1,7 @@
 """
 NovaPulse — Message Formatter
 Produces Telegram HTML-formatted messages for each category digest.
-Now with AI-powered bullet-point summaries.
+Designed for a premium, WhatsApp-friendly visual experience.
 """
 
 from datetime import datetime, timezone
@@ -11,13 +11,15 @@ from config import MAX_ARTICLES_PER_CATEGORY
 
 # ─── Header / Footer ──────────────────────────────────────────────────────────
 
-HEADER_TEMPLATE = """⚡ <b>BuzzWordAI Digest</b>
-<i>{date} • {time} IST</i>
-━━━━━━━━━━━━━━━━━━━━━━"""
+HEADER_TEMPLATE = """🧠 <b>BuzzWordAI</b> — Your Daily AI Pulse
+📅 <i>{date} • {time} IST</i>
+━━━━━━━━━━━━━━━━━━━━━━
+
+Here's what's happening in the world of AI 👇"""
 
 FOOTER = """━━━━━━━━━━━━━━━━━━━━━━
-🌐 Powered by <b>BuzzWordAI</b> | NovaPulse
-Stay sharp. Stay ahead. ⚡"""
+💡 <i>Curated by AI, powered by</i> <b>BuzzWordAI</b>
+📢 Share with your tech crew! ⚡"""
 
 
 def _now_ist() -> tuple[str, str]:
@@ -35,32 +37,32 @@ def format_header() -> str:
 # ─── Category Block ───────────────────────────────────────────────────────────
 
 def format_category_block(cat_key: str, articles: list[dict]) -> str:
-    """Format a single category into a Telegram HTML block with AI summaries."""
+    """Format a single category into a visually rich Telegram HTML block."""
     cat = CATEGORIES[cat_key]
     emoji = cat["emoji"]
     title = cat["title"]
-    subtitle = cat["subtitle"]
 
     lines = [
-        f"\n{emoji} <b>{title}</b>",
-        f"<i>{subtitle}</i>",
+        f"{emoji} <b>{title}</b>",
         "",
     ]
 
-    for article in articles[:MAX_ARTICLES_PER_CATEGORY]:
-        t = article["title"].replace("<", "&lt;").replace(">", "&gt;")
+    for idx, article in enumerate(articles[:MAX_ARTICLES_PER_CATEGORY]):
         url = article["url"]
         ai_summary = article.get("ai_summary", "")
 
         if ai_summary:
-            # Professional format: summary + link
+            # Professional format: summary text (plain) + clickable "Read more" link
             summary_escaped = ai_summary.replace("<", "&lt;").replace(">", "&gt;")
-            lines.append(f"• {summary_escaped}")
-            lines.append(f'  🔗 <a href="{url}">{t}</a>')
-            lines.append("")
+            lines.append(f"▸ {summary_escaped}")
+            lines.append(f'   🔗 <a href="{url}">Read more</a>')
         else:
-            # Fallback: link only
-            lines.append(f'• <a href="{url}">{t}</a>')
+            # Fallback: title as link
+            t = article["title"].replace("<", "&lt;").replace(">", "&gt;")
+            lines.append(f'▸ <a href="{url}">{t}</a>')
+
+        # Add spacing between articles
+        lines.append("")
 
     return "\n".join(lines)
 
