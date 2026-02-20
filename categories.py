@@ -3,14 +3,14 @@ NovaPulse — Category Definitions
 Each category has:
   - emoji, title, description
   - keywords: used to classify articles
-  - rss_feeds:  free RSS sources specific to this category
+  - rss_feeds:  AI-specific RSS sources per category
 """
 
 CATEGORIES = {
     "business": {
         "emoji": "💰",
         "title": "Business & Funding",
-        "subtitle": "Deals, investments & AI economy",
+        "subtitle": "AI deals, investments & economy",
         "keywords": [
             "funding", "investment", "acquisition", "acqui-hire", "startup",
             "venture capital", "series a", "series b", "series c", "ipo",
@@ -21,7 +21,6 @@ CATEGORIES = {
         "rss_feeds": [
             "https://techcrunch.com/category/artificial-intelligence/feed/",
             "https://venturebeat.com/category/ai/feed/",
-            "https://feeds.feedburner.com/fastcompany/headlines",
         ],
     },
 
@@ -40,7 +39,7 @@ CATEGORIES = {
         "rss_feeds": [
             "https://huggingface.co/blog/feed.xml",
             "https://simonwillison.net/atom/everything/",
-            "https://feeds.feedburner.com/tnw",
+            "https://lilianweng.github.io/index.xml",
         ],
     },
 
@@ -59,7 +58,8 @@ CATEGORIES = {
         "rss_feeds": [
             "https://deepmind.google/blog/rss.xml",
             "https://openai.com/blog/rss.xml",
-            "http://feeds.feedburner.com/mit-news",
+            "https://blog.research.google/feeds/posts/default?alt=rss",
+            "https://ai.meta.com/blog/rss/",
         ],
     },
 
@@ -72,12 +72,11 @@ CATEGORIES = {
             "midjourney", "stable diffusion", "dalle", "sora", "runway",
             "text to image", "text to video", "text to music", "deepfake",
             "avatar", "virtual influencer", "gaming", "game ai",
-            "creator economy", "youtube", "content creation", "podcast ai",
-            "voiceover", "dubbing", "animation", "vfx", "nft",
+            "creator economy", "content creation",
+            "voiceover", "dubbing", "animation", "vfx",
         ],
         "rss_feeds": [
-            "https://www.creativebloq.com/rss",
-            "https://venturebeat.com/games/feed/",
+            "https://stability.ai/blog/feed",
         ],
     },
 
@@ -93,8 +92,8 @@ CATEGORIES = {
             "beta", "waitlist", "general availability", "ga", "v2", "v3",
         ],
         "rss_feeds": [
-            "https://www.theverge.com/rss/index.xml",
-            "https://feeds.feedburner.com/techradar/news",
+            "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
+            "https://9to5google.com/guides/google-ai/feed/",
         ],
     },
 
@@ -111,8 +110,7 @@ CATEGORIES = {
             "fcc", "ftc", "nist", "un", "nato",
         ],
         "rss_feeds": [
-            "https://www.politico.com/rss/politicopicks.xml",
-            "https://www.wired.com/feed/rss",
+            "https://www.wired.com/feed/category/artificial-intelligence/latest/rss",
         ],
     },
 
@@ -127,10 +125,7 @@ CATEGORIES = {
             "ai replaces", "automation jobs", "reskilling", "training",
             "university", "mooc", "coursera", "udemy", "openai academy",
         ],
-        "rss_feeds": [
-            "https://www.coursera.org/news/feed",
-            "https://hbr.org/topics/ai/rss",
-        ],
+        "rss_feeds": [],
     },
 
     "hardware": {
@@ -145,21 +140,36 @@ CATEGORIES = {
             "h100", "a100", "b200", "blackwell", "groq", "cerebras",
         ],
         "rss_feeds": [
-            "https://www.anandtech.com/rss/",
             "https://semianalysis.com/feed/",
         ],
     },
 }
 
-# ─── Common AI RSS Feeds (applied to all categories) ───────────────────────
+# ─── Global AI-Focused RSS Feeds ────────────────────────────────────────────
+# These are crawled for ALL categories (Gemini filters out non-AI articles)
 GLOBAL_RSS_FEEDS = [
+    # 🏆 Google News AI — free crawler, aggregates top AI news from the entire internet
+    "https://news.google.com/rss/search?q=artificial+intelligence+OR+machine+learning+OR+LLM+OR+generative+AI&hl=en-US&gl=US&ceid=US:en",
+
+    # 📰 Top AI-specific publications
     "https://techcrunch.com/category/artificial-intelligence/feed/",
     "https://venturebeat.com/ai/feed/",
     "https://www.artificialintelligence-news.com/feed/",
-    "https://feeds.feedburner.com/aiweekly",
     "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml",
-    "https://aiweekly.co/issues.rss",
-    "https://import-ai.beehiiv.com/feed",
+    "https://arstechnica.com/tag/ai/feed/",
+
+    # 🔬 AI Research Lab Blogs
+    "https://openai.com/blog/rss.xml",
+    "https://deepmind.google/blog/rss.xml",
+    "https://blog.research.google/feeds/posts/default?alt=rss",
+    "https://ai.meta.com/blog/rss/",
+    "https://www.anthropic.com/rss",
+    "https://huggingface.co/blog/feed.xml",
+
+    # 📧 AI Newsletters (RSS)
+    "https://simonwillison.net/atom/everything/",
+    "https://www.marktechpost.com/feed/",
+    "https://the-decoder.com/feed/",
 ]
 
 # Category display order for messages
