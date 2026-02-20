@@ -65,16 +65,15 @@ def main() -> None:
 
     # 3. Filter already-seen articles
     target_category = os.getenv("CATEGORY", "all").lower()
+    is_manual = os.getenv("EVENT_NAME") == "workflow_dispatch"
     
-    # Only deduplicate if we are running the full automated fetch
-    if target_category == "all":
-        fresh = filter_seen(all_articles, seen_urls)
-        logger.info(f"Fresh articles (not seen before): {len(fresh)}")
-    else:
-        # For on-demand specific category requests, bypass the deduplication cache
-        # so the user actually gets news, even if it was sent 6 hours ago.
+    # If it's a manual on-demand request from Telegram, always give them the news (bypass cache)
+    if is_manual:
         fresh = all_articles
-        logger.info(f"On-demand category request ({target_category}), bypassing deduplication: {len(fresh)} articles")
+        logger.info(f"Manual trigger detected, bypassing deduplication: {len(fresh)} articles")
+    else:
+        fresh = filter_seen(all_articles, seen_urls)
+        logger.info(f"Automated run: Fresh articles (not seen before): {len(fresh)}")
 
     if not fresh:
         logger.info("Nothing new to post. Exiting.")
@@ -106,13 +105,13 @@ def main() -> None:
     logger.info(f"Messages sent: {sent}/{len(messages)}")
 
     # 7. Save seen URLs
-    if target_category == "all":
+    if not is_manual:
         new_urls = {a["url"] for a in fresh}
         seen_urls.update(new_urls)
         save_seen_urls(seen_urls)
         logger.info(f"Saved {len(new_urls)} new URLs to seen list.")
     else:
-        logger.info("Bypassed saving seen URLs for on-demand category request.")
+        logger.info("Bypassed saving seen URLs for manual request.")
 
     logger.info("✅ NovaPulse run complete.")
 
