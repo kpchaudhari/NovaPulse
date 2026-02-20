@@ -16,11 +16,14 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0
 
 # ─── Prompt Template ─────────────────────────────────────────────────────────
 
-SUMMARY_PROMPT = """You are an expert AI news analyst writing a WhatsApp-friendly news digest.
+SUMMARY_PROMPT = """You are an expert AI/tech news analyst writing a WhatsApp-friendly news digest.
 
 I will give you a list of article titles and their RSS descriptions from the "{category}" category.
 
-For each article, write a concise, punchy 1-2 line bullet-point summary that:
+IMPORTANT: This digest is EXCLUSIVELY about Artificial Intelligence, Machine Learning, and related technology. 
+If an article is NOT related to AI, ML, LLMs, neural networks, automation, robotics, or tech industry AI developments, set its summary to "SKIP".
+
+For each AI-relevant article, write a concise, punchy 1-2 line bullet-point summary that:
 - Captures the KEY facts (who, what, numbers, impact)
 - Is written in professional news style (no fluff, no opinions)
 - Can be understood without clicking the link
@@ -29,7 +32,7 @@ For each article, write a concise, punchy 1-2 line bullet-point summary that:
 Respond ONLY with a valid JSON array of objects, one per article, in this exact format:
 [
   {{"index": 0, "summary": "Your 1-2 line summary here"}},
-  {{"index": 1, "summary": "Your 1-2 line summary here"}}
+  {{"index": 1, "summary": "SKIP"}}
 ]
 
 Do NOT include anything outside the JSON array. No explanation, no preamble.
@@ -111,13 +114,20 @@ def summarize_category(cat_key: str, articles: list[dict]) -> list[dict]:
 
             summaries = json.loads(cleaned)
 
-            # Attach summaries to articles
+            # Attach summaries to articles, filtering out non-AI ones
             summary_map = {s["index"]: s["summary"] for s in summaries}
+            result = []
+            skipped = 0
             for i, article in enumerate(capped):
-                article["ai_summary"] = summary_map.get(i, "")
+                s = summary_map.get(i, "")
+                if s.upper() == "SKIP":
+                    skipped += 1
+                    continue
+                article["ai_summary"] = s
+                result.append(article)
 
-            logger.info(f"  Gemini summarized {len(summaries)} articles for [{cat_key}]")
-            return capped
+            logger.info(f"  Gemini summarized {len(result)} articles for [{cat_key}] (skipped {skipped} non-AI)")
+            return result
 
         except Exception as e:
             if attempt < max_retries - 1:
