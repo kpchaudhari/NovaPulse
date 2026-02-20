@@ -73,7 +73,21 @@ def main() -> None:
 
     # 4. Classify
     categorised = classify_all(fresh)
+    
+    # Optional: Filter to a single category if requested
+    target_category = os.getenv("CATEGORY", "all").lower()
+    if target_category != "all" and target_category in categorised:
+        logger.info(f"Filtering digest for category: {target_category}")
+        categorised = {target_category: categorised[target_category]}
+    elif target_category != "all":
+        logger.warning(f"Requested category '{target_category}' not found or invalid.")
+        categorised = {}
+
     logger.info(f"Digest: {format_summary_line(categorised)}")
+
+    if not any(categorised.values()):
+        logger.info("No matching articles found for the given criteria. Exiting.")
+        sys.exit(0)
 
     # 5. Format
     messages = format_full_digest(categorised)
