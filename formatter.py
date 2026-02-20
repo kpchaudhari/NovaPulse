@@ -1,6 +1,7 @@
 """
 NovaPulse — Message Formatter
 Produces Telegram HTML-formatted messages for each category digest.
+Now with AI-powered bullet-point summaries.
 """
 
 from datetime import datetime, timezone
@@ -10,12 +11,12 @@ from config import MAX_ARTICLES_PER_CATEGORY
 
 # ─── Header / Footer ──────────────────────────────────────────────────────────
 
-HEADER_TEMPLATE = """⚡ <b>NovaPulse AI Digest</b>
+HEADER_TEMPLATE = """⚡ <b>BuzzWordAI Digest</b>
 <i>{date} • {time} IST</i>
 ━━━━━━━━━━━━━━━━━━━━━━"""
 
 FOOTER = """━━━━━━━━━━━━━━━━━━━━━━
-🌐 Powered by <b>NovaPulse</b> | Auro & Eevio
+🌐 Powered by <b>BuzzWordAI</b> | NovaPulse
 Stay sharp. Stay ahead. ⚡"""
 
 
@@ -34,7 +35,7 @@ def format_header() -> str:
 # ─── Category Block ───────────────────────────────────────────────────────────
 
 def format_category_block(cat_key: str, articles: list[dict]) -> str:
-    """Format a single category into a Telegram HTML block."""
+    """Format a single category into a Telegram HTML block with AI summaries."""
     cat = CATEGORIES[cat_key]
     emoji = cat["emoji"]
     title = cat["title"]
@@ -49,7 +50,17 @@ def format_category_block(cat_key: str, articles: list[dict]) -> str:
     for article in articles[:MAX_ARTICLES_PER_CATEGORY]:
         t = article["title"].replace("<", "&lt;").replace(">", "&gt;")
         url = article["url"]
-        lines.append(f"• <a href=\"{url}\">{t}</a>")
+        ai_summary = article.get("ai_summary", "")
+
+        if ai_summary:
+            # Professional format: summary + link
+            summary_escaped = ai_summary.replace("<", "&lt;").replace(">", "&gt;")
+            lines.append(f"• {summary_escaped}")
+            lines.append(f'  🔗 <a href="{url}">{t}</a>')
+            lines.append("")
+        else:
+            # Fallback: link only
+            lines.append(f'• <a href="{url}">{t}</a>')
 
     return "\n".join(lines)
 

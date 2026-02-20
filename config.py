@@ -14,6 +14,9 @@ TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")  # e.g. @YourChannel 
 # ─── NewsAPI ─────────────────────────────────────────────────────────────────
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")  # https://newsapi.org (free: 100 req/day)
 
+# ─── Gemini AI ───────────────────────────────────────────────────────────────
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")  # https://aistudio.google.com (free tier)
+
 # ─── Bot Behaviour ───────────────────────────────────────────────────────────
 MAX_ARTICLES_PER_CATEGORY = int(os.getenv("MAX_ARTICLES_PER_CATEGORY", "5"))
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"   # Print instead of send

@@ -53,6 +53,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
           NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           CATEGORY: ${{ github.event.inputs.category || 'all' }}
           EVENT_NAME: ${{ github.event_name }}

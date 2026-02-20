@@ -16,6 +16,7 @@ from pathlib import Path
 from config import SEEN_URLS_FILE, MAX_SEEN_URLS
 from fetcher import fetch_all_articles
 from classifier import classify_all
+from summarizer import summarize_all
 from formatter import format_full_digest, format_summary_line
 from telegram_bot import send_messages
 
@@ -97,14 +98,18 @@ def main() -> None:
         logger.info("No matching articles found for the given criteria. Exiting.")
         sys.exit(0)
 
-    # 5. Format
+    # 5. AI Summarize
+    logger.info("Generating AI summaries via Gemini...")
+    categorised = summarize_all(categorised)
+
+    # 6. Format
     messages = format_full_digest(categorised)
 
-    # 6. Send
+    # 7. Send
     sent = send_messages(messages)
     logger.info(f"Messages sent: {sent}/{len(messages)}")
 
-    # 7. Save seen URLs
+    # 8. Save seen URLs
     if not is_manual:
         new_urls = {a["url"] for a in fresh}
         seen_urls.update(new_urls)
